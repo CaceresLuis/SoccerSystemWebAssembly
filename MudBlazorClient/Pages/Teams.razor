@@ -1,0 +1,66 @@
+﻿@page "/teams"
+@using MudBlazorClient.Models
+@inherits TeamsBase
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+
+@if (Teams == null)
+{
+    <h3>Loading...</h3>
+}
+else
+{
+   <MudButton Variant="Variant.Outlined" @onclick="AddDialog"  EndIcon="@Icons.Material.Filled.AddCircle" Color="Color.Info">Add Team</MudButton>
+
+    <MudTable Hover="true" Items="Teams">
+        <HeaderContent>
+            <MudTh>Name</MudTh>
+            <MudTh>Logo</MudTh>
+            <MudTh>Actions</MudTh>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd DataLabel="Name">@context.Name</MudTd>
+            <MudTd DataLabel="Logo">
+                <MudImage Src="@context.LogoPath" Alt="Logo Team" Elevation="25" Width="200" Height="200"/>
+            </MudTd>
+                <MudTd DataLabel="Actions">
+                    <MudButtonGroup Color="Color.Inherit" Variant="Variant.Filled">
+                         <MudIconButton Icon="@Icons.Material.Filled.Edit" @onclick="(() => UpdateDialog(context.Id))"   Color="Color.Warning" ></MudIconButton>
+                         <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error"  @onclick="(() => Delete(context.Id))"></MudIconButton>
+                </MudButtonGroup>
+            </MudTd>
+        </RowTemplate>
+        <PagerContent>
+            <MudTablePager />
+        </PagerContent>
+    </MudTable>
+}
+
+@code{
+    private async void AddDialog()
+    {
+        DialogOptions? options = new() { CloseOnEscapeKey = true };
+        DialogService.Show<AddTeam_Dialog>("New Team", options);
+    }
+
+    private void UpdateDialog(Guid id)
+    {
+        var team = Teams.FirstOrDefault(t => t.Id == id);
+
+        DialogParameters? parameters = new DialogParameters();
+        parameters.Add("Id", team.Id);
+        parameters.Add("Name", team.Name);
+        parameters.Add("LogoPath", team.LogoPath);
+        DialogOptions? options = new() { CloseOnEscapeKey = true };
+        DialogService.Show<UpdateTeam_Dialog>("New Team", parameters, options);
+    }
+
+    public async Task<TableData<Team>> ServerReloadAsync()
+    {
+        var result = await TeamService.GetTeams();
+        return new TableData<Team>
+            {
+                Items = result
+            };
+    }
+}

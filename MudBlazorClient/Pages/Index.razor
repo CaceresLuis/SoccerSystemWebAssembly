@@ -1,0 +1,17 @@
+﻿@page "/"
+@inject IDialogService DialogService
+
+<PageTitle>Index</PageTitle>
+
+<MudButton Variant="Variant.Outlined" @onclick="AddDialog"  EndIcon="@Icons.Material.Filled.AddCircle" Color="Color.Info">Add Team</MudButton>
+<MudText Typo="Typo.h3" GutterBottom="true">Hello, world!</MudText>
+<MudText Class="mb-8">Welcome to your new app, powered by MudBlazor!</MudText>
+<MudAlert Severity="Severity.Normal">You can find documentation and examples on our website here: <MudLink Href="https://mudblazor.com" Typo="Typo.body2" Color="Color.Inherit"><b>www.mudblazor.com</b></MudLink></MudAlert>
+
+@code{
+        private async void AddDialog()
+    {
+        DialogOptions? options = new() { CloseOnEscapeKey = true };
+        DialogService.Show<AddTeam_Dialog>("New Team", options);
+    }
+}

@@ -1,0 +1,84 @@
+﻿@page "/teams2"
+@using System.Net.Http.Json
+@using MudBlazorClient.Models
+@inject HttpClient httpClient
+@inherits TeamsBase
+@inject IDialogService DialogService
+
+ <MudButton Variant="Variant.Outlined" @onclick="AddDialog"  EndIcon="@Icons.Material.Filled.AddCircle" Color="Color.Info">Add Team</MudButton>
+<MudTable ServerData="@(new Func<TableState, Task<TableData<Team>>>(ServerReload))"
+          Dense="true" Hover="true" @ref="table">
+    <ToolBarContent>
+        <MudText Typo="Typo.h6">Periodic Elements</MudText>
+        <MudSpacer />
+        <MudTextField T="string" ValueChanged="@(s=>OnSearch(s))" Placeholder="Search" Adornment="Adornment.Start"
+                      AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0"></MudTextField>
+    </ToolBarContent>
+    <HeaderContent>
+        <MudTh><MudTableSortLabel SortLabel="Name" T="Team">Name</MudTableSortLabel></MudTh>
+        <MudTh><MudTableSortLabel SortLabel="Logo" T="Team">Logo</MudTableSortLabel></MudTh>
+    </HeaderContent>
+    <RowTemplate>
+        <MudTd DataLabel="Name">@context.Name</MudTd>
+        <MudTd DataLabel="Logo">
+             <MudImage Src="@context.LogoPath" Alt="Logo Team" Elevation="25" Width="200" Height="200"/>
+         </MudTd>
+
+    </RowTemplate>
+    <NoRecordsContent>
+        <MudText>No matching records found</MudText>
+    </NoRecordsContent>
+    <LoadingContent>
+        <MudText>Loading...</MudText>
+    </LoadingContent>
+    <PagerContent>
+        <MudTablePager />
+    </PagerContent>
+</MudTable>
+
+@code {
+    private IEnumerable<Team> pagedData;
+    private MudTable<Team> table;
+
+    private int totalItems;
+    private string searchString = null;
+
+    /// <summary>
+    /// Here we simulate getting the paged, filtered and ordered data from the server
+    /// </summary>
+    private async Task<TableData<Team>> ServerReload(TableState state)
+    {
+        IEnumerable<Team> data = await httpClient.GetFromJsonAsync<List<Team>>("api/team");
+        await Task.Delay(300);
+        data = data.Where(element =>
+        {
+            if (string.IsNullOrWhiteSpace(searchString))
+                return true;
+            if (element.Name.Contains(searchString, StringComparison.OrdinalIgnoreCase))
+                return true;
+            return false;
+        }).ToArray();
+        totalItems = data.Count();
+        switch (state.SortLabel)
+        {
+            case "name_field":
+                data = data.OrderByDirection(state.SortDirection, o => o.Name);
+                break;
+        }
+
+        pagedData = data.Skip(state.Page * state.PageSize).Take(state.PageSize).ToArray();
+        return new TableData<Team>() {TotalItems = totalItems, Items = pagedData};
+    }
+
+    private void OnSearch(string text)
+    {
+        searchString = text;
+        table.ReloadServerData();
+    }
+
+        private async void AddDialog()
+    {
+        DialogOptions? options = new() { CloseOnEscapeKey = true };
+        DialogService.Show<AddTeam_Dialog>("New Team", options);
+    }
+}

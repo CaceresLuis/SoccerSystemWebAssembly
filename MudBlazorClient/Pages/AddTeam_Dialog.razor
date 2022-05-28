@@ -1,0 +1,76 @@
+﻿@inherits TeamsBase
+@using System.Text.RegularExpressions
+@using System.ComponentModel.DataAnnotations
+@using MudBlazorClient.Models
+
+<MudDialog>
+    <DialogContent>
+        <MudGrid>
+            <MudItem xs="12">
+                <MudPaper Class="pa-16" >
+                    <MudForm @ref="form" @bind-IsValid="@success" @bind-Errors="@errors">
+                            <MudTextField Margin="Margin.Normal" AutoFocus @bind-Text="Name" T="string" Label="Entry the team name" Required="true" RequiredError="Team name is required!"/>
+                            <InputFile id="fileInput" OnChange="OnInputFileChangued" hidden />
+                            <MudFab HtmlTag="label"
+                                    Color="Color.Success"
+                                    Icon="@Icons.Filled.AttachFile"
+                                    for="fileInput" />
+                                    <MudList>
+                                        <MudListItem Icon="@Icons.Filled.AttachFile">
+                                            <img src="@PictureUrl" width="200" height="200"  />
+                                        </MudListItem>
+                                    </MudList>
+                    </MudForm>   
+                </MudPaper>
+            </MudItem>
+        </MudGrid>
+    </DialogContent>
+    <DialogActions>
+         <MudPaper Class="pa-4 mt-4">
+                    <MudButton Variant="Variant.Filled" Color="Color.Primary" DisableElevation="true" StartIcon="@Icons.Filled.Save" Disabled="@(!success)" OnClick="@Submit">Save</MudButton>
+                    <MudButton Variant="Variant.Filled" Color="Color.Secondary" DisableElevation="true" StartIcon="@Icons.Filled.Cancel" OnClick="@Cancel" Class="mx-2">Cancel</MudButton>
+                </MudPaper>
+    </DialogActions>
+</MudDialog>
+
+
+@code {
+    public string? PictureUrl { get; set; }
+
+    private async void OnInputFileChangued(InputFileChangeEventArgs e)
+    {
+        //get file
+        IBrowserFile file = e.File;
+        string format = "image/jpg";
+        var resizetFile = await file.RequestImageFileAsync(format, 300, 300);
+        //read file arrar
+        byte[] buffer = new byte[resizetFile.Size];
+        await resizetFile.OpenReadStream().ReadAsync(buffer);
+
+        //conver to base 64
+        PictureUrl = $"data:{format};base64, {Convert.ToBase64String(buffer)}";
+        Logo = Convert.ToBase64String(buffer);
+    }
+
+
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; }
+    private async void Submit()
+    {
+        await AddTeam();
+        Team team = new()
+        {
+            Name = Name,
+            LogoPath = PictureUrl
+        };
+
+        Teams.Add(team);
+
+        MudDialog.Close(DialogResult.Ok(true));
+    }
+    void Cancel() => MudDialog.Cancel();
+
+    bool success;
+    string[] errors = { };
+    MudTextField<string> pwField1;
+    MudForm form;
+}
